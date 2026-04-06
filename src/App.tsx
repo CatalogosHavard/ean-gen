@@ -689,7 +689,7 @@ export default function App() {
                                     onClick={() => changeEanStatus(ean.ean, 'blacklisted')}
                                     className="text-xs font-bold text-error hover:underline cursor-pointer"
                                   >
-                                    A Lista Negra
+                                    A USADO
                                   </button>
                                 )}
                               </td>
