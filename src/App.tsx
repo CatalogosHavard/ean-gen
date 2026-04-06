@@ -56,7 +56,7 @@ function TopNavBar({ activeTab, setActiveTab, userName, onLogout }: { activeTab:
     <nav className="fixed top-0 w-full z-50 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl shadow-[0_4px_12px_rgba(0,0,0,0.04),0_20px_40px_rgba(0,88,188,0.08)]">
       <div className="flex justify-between items-center h-16 px-4 md:px-8 max-w-full mx-auto">
         <div className="flex items-center gap-4 md:gap-8 overflow-x-auto no-scrollbar">
-          <span className="text-xl font-bold tracking-tighter text-slate-900 dark:text-white font-headline shrink-0">EAN Flow</span>
+          <span className="text-xl font-bold tracking-tighter text-slate-900 dark:text-white font-headline shrink-0">ColucciEANtool</span>
           <div className="flex gap-4 md:gap-6 items-center">
             {tabs.map(tab => (
               <button 
@@ -95,8 +95,8 @@ function Footer() {
     <footer className="bg-slate-50 dark:bg-slate-950 w-full py-12 border-t border-slate-200/15 mt-auto">
       <div className="flex flex-col md:flex-row justify-between items-center px-12 max-w-7xl mx-auto gap-8">
         <div className="flex flex-col items-center md:items-start gap-2">
-          <span className="font-bold text-slate-900 dark:text-white font-headline">EAN Flow</span>
-          <p className="font-body text-slate-500 dark:text-slate-400 text-sm">© 2026 EAN Flow. Atmospheric Clarity Design.</p>
+          <span className="font-bold text-slate-900 dark:text-white font-headline">ColucciEANtoolw</span>
+          <p className="font-body text-slate-500 dark:text-slate-400 text-sm">© 2026 Grupo Colucci. ColucciEANtool.</p>
         </div>
       </div>
     </footer>
