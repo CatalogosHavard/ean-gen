@@ -38,6 +38,7 @@ jobs:
         run: npm install
         
       - name: Build
+        # Inyecta automáticamente el nombre del repositorio como base path para evitar la pantalla en blanco
         run: npm run build -- --base=/${{ github.event.repository.name }}/
         
       - name: Setup Pages
