@@ -1,0 +1,38 @@
+{
+  "entities": {
+    "Brand": {
+      "title": "Brand",
+      "description": "A brand that owns a specific EAN prefix",
+      "type": "object",
+      "properties": {
+        "id": { "type": "number" },
+        "name": { "type": "string" },
+        "prefix": { "type": "string" },
+        "createdBy": { "type": "string" }
+      },
+      "required": ["id", "name", "prefix", "createdBy"]
+    },
+    "EAN": {
+      "title": "EAN",
+      "description": "A generated EAN-13 code",
+      "type": "object",
+      "properties": {
+        "ean": { "type": "string" },
+        "brand_id": { "type": "number" },
+        "status": { "type": "string", "enum": ["generated", "used", "blacklisted"] },
+        "updatedBy": { "type": "string" }
+      },
+      "required": ["ean", "brand_id", "status"]
+    }
+  },
+  "firestore": {
+    "/brands/{brandId}": {
+      "schema": { "$ref": "#/entities/Brand" },
+      "description": "Stores brand information"
+    },
+    "/eans/{eanId}": {
+      "schema": { "$ref": "#/entities/EAN" },
+      "description": "Stores generated EANs"
+    }
+  }
+}

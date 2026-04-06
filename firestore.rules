@@ -1,0 +1,70 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: brands
+    // Document ID: string (matches id field)
+    // Fields:
+    //   - id: number (required)
+    //   - name: string (required, 1-100 chars)
+    //   - prefix: string (required, 7-9 chars)
+    //   - createdBy: string (required, name of creator)
+    //
+    // Collection: eans
+    // Document ID: string (matches ean field)
+    // Fields:
+    //   - ean: string (required, 13 chars)
+    //   - brand_id: number (required)
+    //   - status: string (required, 'generated', 'used', 'blacklisted')
+    //   - updatedBy: string (optional, name of last updater)
+    //
+    // ===============================================================
+
+    function hasOnlyAllowedFields(allowedFields) {
+      return request.resource.data.keys().hasOnly(allowedFields);
+    }
+    
+    function hasRequiredFields(requiredFields) {
+      return request.resource.data.keys().hasAll(requiredFields);
+    }
+    
+    function isValidBrand(data) {
+      return hasOnlyAllowedFields(['id', 'name', 'prefix', 'createdBy']) &&
+             hasRequiredFields(['id', 'name', 'prefix', 'createdBy']) &&
+             data.id is number &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+             data.prefix is string && data.prefix.size() >= 7 && data.prefix.size() <= 9 &&
+             data.createdBy is string && data.createdBy.size() > 0 && data.createdBy.size() <= 50;
+    }
+    
+    function isValidEan(data) {
+      return hasOnlyAllowedFields(['ean', 'brand_id', 'status', 'updatedBy']) &&
+             hasRequiredFields(['ean', 'brand_id', 'status']) &&
+             data.ean is string && data.ean.size() == 13 &&
+             data.brand_id is number &&
+             data.status in ['generated', 'used', 'blacklisted'] &&
+             (!('updatedBy' in data) || (data.updatedBy is string && data.updatedBy.size() <= 50));
+    }
+
+    match /brands/{brandId} {
+      // Allow public read/write since authentication is removed per user request
+      allow read: if true;
+      allow create: if isValidBrand(request.resource.data);
+      allow update, delete: if false;
+    }
+
+    match /eans/{eanId} {
+      allow read: if true;
+      allow create: if isValidEan(request.resource.data);
+      allow update: if isValidEan(request.resource.data) &&
+                    request.resource.data.ean == resource.data.ean &&
+                    request.resource.data.brand_id == resource.data.brand_id;
+      allow delete: if false;
+    }
+  }
+}
