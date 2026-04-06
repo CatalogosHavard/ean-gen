@@ -1,5 +1,5 @@
 {
-  "name": "",
-  "description": "",
+  "name": "ColucciEANtool",
+  "description": "Herramienta colaborativa para generar, registrar y validar códigos EAN-13.",
   "requestFramePermissions": []
 }

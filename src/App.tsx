@@ -37,7 +37,7 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
     path
   }
   console.error('Firestore Error: ', JSON.stringify(errInfo));
-  alert(`Database Error: ${errInfo.error}`);
+  alert(`Error de Base de Datos: ${errInfo.error}`);
 }
 
 function cn(...inputs: ClassValue[]) {
@@ -46,10 +46,10 @@ function cn(...inputs: ClassValue[]) {
 
 function TopNavBar({ activeTab, setActiveTab, userName, onLogout }: { activeTab: string, setActiveTab: (t: string) => void, userName: string, onLogout: () => void }) {
   const tabs = [
-    { id: 'generator', label: 'Generator' },
-    { id: 'registry', label: 'Registry' },
-    { id: 'validator', label: 'Validator' },
-    { id: 'blacklist', label: 'Blacklist' }
+    { id: 'generator', label: 'Generador' },
+    { id: 'registry', label: 'Registro' },
+    { id: 'validator', label: 'Validador' },
+    { id: 'blacklist', label: 'Lista Negra' }
   ];
 
   return (
@@ -80,7 +80,7 @@ function TopNavBar({ activeTab, setActiveTab, userName, onLogout }: { activeTab:
                 <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{userName}</span>
               </div>
               <button onClick={onLogout} className="text-xs font-bold text-on-surface-variant hover:text-error transition-colors cursor-pointer">
-                Change Name
+                Cambiar Nombre
               </button>
             </div>
           )}
@@ -95,8 +95,8 @@ function Footer() {
     <footer className="bg-slate-50 dark:bg-slate-950 w-full py-12 border-t border-slate-200/15 mt-auto">
       <div className="flex flex-col md:flex-row justify-between items-center px-12 max-w-7xl mx-auto gap-8">
         <div className="flex flex-col items-center md:items-start gap-2">
-          <span className="font-bold text-slate-900 dark:text-white font-headline">ColucciEANtoolw</span>
-          <p className="font-body text-slate-500 dark:text-slate-400 text-sm">© 2026 Grupo Colucci. ColucciEANtool.</p>
+          <span className="font-bold text-slate-900 dark:text-white font-headline">ColucciEANtool</span>
+          <p className="font-body text-slate-500 dark:text-slate-400 text-sm">© 2026 ColucciEANtool. Atmospheric Clarity Design.</p>
         </div>
       </div>
     </footer>
@@ -205,7 +205,7 @@ export default function App() {
   const handleCreateBrand = async () => {
     if (!newBrandName || !newBrandPrefix) return;
     if (brands.some(b => b.prefix === newBrandPrefix)) {
-      alert('Brand prefix already exists.');
+      alert('El prefijo de la marca ya existe.');
       return;
     }
     
@@ -291,7 +291,7 @@ export default function App() {
   const handleAddToBlacklist = async () => {
     if (!blacklistInput) return;
     const eanList = blacklistInput.split('\n').map(e => e.trim()).filter(e => e.length > 0);
-    if (eanList.length === 0) return alert('No EANs provided');
+    if (eanList.length === 0) return alert('No se proporcionaron EANs');
     
     let addedCount = 0;
     let updatedCount = 0;
@@ -344,9 +344,9 @@ export default function App() {
       }
       setBlacklistInput('');
       
-      let alertMsg = `Blacklist updated.\nAdded: ${addedCount}\nUpdated: ${updatedCount}`;
+      let alertMsg = `Lista negra actualizada.\nAgregados: ${addedCount}\nActualizados: ${updatedCount}`;
       if (invalidCount > 0) {
-        alertMsg += `\nMathematically Invalid (Ignored): ${invalidCount}`;
+        alertMsg += `\nMatemáticamente Inválidos (Ignorados): ${invalidCount}`;
       }
       alert(alertMsg);
     } catch (error) {
@@ -362,11 +362,11 @@ export default function App() {
 
   const validationResult = React.useMemo(() => {
     if (!validateEan) return null;
-    if (!/^\d{13}$/.test(validateEan)) return { valid: false, msg: 'EAN must be exactly 13 digits.' };
+    if (!/^\d{13}$/.test(validateEan)) return { valid: false, msg: 'El EAN debe tener exactamente 13 dígitos.' };
     
     const checksum = calcChecksum(validateEan.substring(0, 12));
     if (checksum !== parseInt(validateEan[12])) {
-      return { valid: false, msg: `Invalid checksum. Expected ${checksum}, got ${validateEan[12]}.` };
+      return { valid: false, msg: `Dígito verificador inválido. Se esperaba ${checksum}, se obtuvo ${validateEan[12]}.` };
     }
     
     const existing = eans.find(e => e.ean === validateEan);
@@ -374,16 +374,16 @@ export default function App() {
       const brand = brands.find(b => b.id === existing.brand_id);
       return { 
         valid: true, 
-        msg: 'Mathematically Valid', 
-        status: existing.status, 
-        brand: brand?.name || 'Unknown' 
+        msg: 'Matemáticamente Válido', 
+        status: existing.status === 'generated' ? 'generado' : existing.status === 'used' ? 'usado' : 'lista negra', 
+        brand: brand?.name || 'Desconocido' 
       };
     }
-    return { valid: true, msg: 'Mathematically Valid', status: 'unregistered', brand: '-' };
+    return { valid: true, msg: 'Matemáticamente Válido', status: 'no registrado', brand: '-' };
   }, [validateEan, eans, brands]);
 
   if (!isReady) {
-    return <div className="min-h-screen flex items-center justify-center bg-surface text-on-surface">Loading...</div>;
+    return <div className="min-h-screen flex items-center justify-center bg-surface text-on-surface">Cargando...</div>;
   }
 
   return (
@@ -396,16 +396,16 @@ export default function App() {
             <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mb-6">
               <UserIcon className="w-10 h-10 text-primary" />
             </div>
-            <h1 className="text-4xl font-extrabold font-headline mb-4">Welcome to EAN Flow</h1>
+            <h1 className="text-4xl font-extrabold font-headline mb-4">Bienvenido a ColucciEANtool</h1>
             <p className="text-xl text-on-surface-variant max-w-lg mb-8">
-              Enter your name to start generating and managing EANs. This helps the team know who created what.
+              Ingresa tu nombre para empezar a generar y gestionar EANs. Esto ayuda al equipo a saber quién creó qué.
             </p>
             <form onSubmit={handleSaveName} className="flex flex-col gap-4 w-full max-w-sm">
               <input 
                 type="text"
                 value={nameInput}
                 onChange={e => setNameInput(e.target.value)}
-                placeholder="Your Name (e.g. Juan)"
+                placeholder="Tu Nombre (ej. Juan)"
                 className="w-full bg-surface-container-low border-none rounded-xl p-4 text-center font-bold text-lg outline-none focus:ring-2 focus:ring-primary/20"
                 required
                 maxLength={50}
@@ -414,7 +414,7 @@ export default function App() {
                 type="submit"
                 className="py-4 px-8 bg-primary text-white font-bold rounded-xl hover:bg-primary/90 transition-all shadow-lg hover:shadow-primary/20 hover:-translate-y-1 cursor-pointer"
               >
-                Continue
+                Continuar
               </button>
             </form>
           </div>
@@ -427,16 +427,16 @@ export default function App() {
               className="mb-12"
             >
               <h1 className="text-5xl font-extrabold tracking-tight text-on-surface mb-2 font-headline">
-                {activeTab === 'generator' && 'EAN Generator'}
-                {activeTab === 'registry' && 'EAN Registry'}
-                {activeTab === 'validator' && 'EAN Validator'}
-                {activeTab === 'blacklist' && 'Blacklist'}
+                {activeTab === 'generator' && 'Generador de EANs'}
+                {activeTab === 'registry' && 'Registro de EANs'}
+                {activeTab === 'validator' && 'Validador de EANs'}
+                {activeTab === 'blacklist' && 'Lista Negra'}
               </h1>
               <p className="text-on-surface-variant text-lg">
-                {activeTab === 'generator' && 'Define your brand identity and generate unique product identifiers at scale.'}
-                {activeTab === 'registry' && 'Manage your generated, used, and blacklisted EANs.'}
-                {activeTab === 'validator' && 'Mathematically verify any EAN-13 and check its status in your registry.'}
-                {activeTab === 'blacklist' && 'Prevent specific EANs from being generated by adding them to the blacklist.'}
+                {activeTab === 'generator' && 'Define la identidad de tu marca y genera identificadores de producto únicos a escala.'}
+                {activeTab === 'registry' && 'Gestiona tus EANs generados, usados y en lista negra.'}
+                {activeTab === 'validator' && 'Verifica matemáticamente cualquier EAN-13 y revisa su estado en tu registro.'}
+                {activeTab === 'blacklist' && 'Evita que se generen EANs específicos agregándolos a la lista negra.'}
               </p>
             </motion.header>
 
@@ -455,8 +455,8 @@ export default function App() {
                           <Badge className="w-6 h-6" />
                         </div>
                         <div>
-                          <h2 className="text-xl font-bold text-on-surface font-headline">Brand Identity</h2>
-                          <p className="text-sm text-on-surface-variant">Select or create a brand</p>
+                          <h2 className="text-xl font-bold text-on-surface font-headline">Identidad de Marca</h2>
+                          <p className="text-sm text-on-surface-variant">Selecciona o crea una marca</p>
                         </div>
                       </div>
                     </div>
@@ -464,32 +464,32 @@ export default function App() {
                     <div className="space-y-6">
                       {brands.length > 0 && (
                         <div className="space-y-2">
-                          <label className="text-sm font-semibold text-on-surface-variant ml-1">Select Brand</label>
+                          <label className="text-sm font-semibold text-on-surface-variant ml-1">Seleccionar Marca</label>
                           <select 
                             className="w-full bg-surface-container-low border-none rounded-lg p-4 focus:ring-2 focus:ring-primary/20 transition-all text-on-surface font-medium outline-none"
                             value={selectedBrandId || ''}
                             onChange={(e) => setSelectedBrandId(Number(e.target.value))}
                           >
                             {brands.map(b => (
-                              <option key={b.id} value={b.id}>{b.name} (Prefix: {b.prefix})</option>
+                              <option key={b.id} value={b.id}>{b.name} (Prefijo: {b.prefix})</option>
                             ))}
                           </select>
                         </div>
                       )}
 
                       <div className="pt-4 border-t border-outline-variant/20">
-                        <p className="text-sm font-bold text-on-surface mb-4">Or Create New Brand</p>
+                        <p className="text-sm font-bold text-on-surface mb-4">O Crear Nueva Marca</p>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <input 
                             className="w-full bg-surface-container-low border-none rounded-lg p-4 focus:ring-2 focus:ring-primary/20 transition-all text-on-surface font-medium placeholder:text-outline/50 outline-none" 
-                            placeholder="Brand Name" 
+                            placeholder="Nombre de la Marca" 
                             value={newBrandName}
                             onChange={e => setNewBrandName(e.target.value)}
                             type="text"
                           />
                           <input 
                             className="w-full bg-surface-container-low border-none rounded-lg p-4 focus:ring-2 focus:ring-primary/20 transition-all text-on-surface font-medium placeholder:text-outline/50 outline-none" 
-                            placeholder="Prefix (7-9 digits)" 
+                            placeholder="Prefijo (7-9 dígitos)" 
                             value={newBrandPrefix}
                             onChange={e => setNewBrandPrefix(e.target.value)}
                             type="number"
@@ -499,7 +499,7 @@ export default function App() {
                           onClick={handleCreateBrand}
                           className="mt-4 py-3 px-6 bg-surface-container-high text-on-surface font-bold rounded-lg hover:bg-surface-dim transition-colors flex items-center gap-2 cursor-pointer"
                         >
-                          <Plus className="w-4 h-4" /> Add Brand
+                          <Plus className="w-4 h-4" /> Agregar Marca
                         </button>
                       </div>
                     </div>
@@ -521,7 +521,7 @@ export default function App() {
                         className="flex-1 py-5 px-8 bg-gradient-to-br from-primary to-primary-container text-white rounded-xl font-bold text-lg shadow-lg hover:shadow-primary/20 hover:scale-[1.01] active:scale-95 transition-all flex items-center justify-center gap-3 cursor-pointer disabled:opacity-50 disabled:pointer-events-none"
                       >
                         <Zap className="w-6 h-6 fill-current" />
-                        Generate {generateCount} EANs
+                        Generar {generateCount} EANs
                       </button>
                     </div>
                   </div>
@@ -535,7 +535,7 @@ export default function App() {
                 >
                   <div className="bg-surface-container-lowest border border-outline-variant/10 rounded-xl overflow-hidden shadow-xl">
                     <div className="p-6 bg-surface-container-low/50 flex justify-between items-center border-b border-outline-variant/10">
-                      <span className="text-xs font-bold uppercase tracking-widest text-on-surface-variant">Live Preview</span>
+                      <span className="text-xs font-bold uppercase tracking-widest text-on-surface-variant">Vista Previa</span>
                       <div className="flex gap-1">
                         <div className="w-2 h-2 rounded-full bg-error"></div>
                         <div className="w-2 h-2 rounded-full bg-secondary-container"></div>
@@ -588,12 +588,12 @@ export default function App() {
                       </div>
                       <div className="w-full space-y-4">
                         <div className="flex justify-between items-center text-sm">
-                          <span className="text-on-surface-variant">Structure</span>
-                          <span className="font-semibold text-on-surface">EAN-13 Standard</span>
+                          <span className="text-on-surface-variant">Estructura</span>
+                          <span className="font-semibold text-on-surface">Estándar EAN-13</span>
                         </div>
                         <div className="flex justify-between items-center text-sm">
-                          <span className="text-on-surface-variant">Checksum Digit</span>
-                          <span className="font-semibold text-primary">Valid (Modulo 10)</span>
+                          <span className="text-on-surface-variant">Dígito Verificador</span>
+                          <span className="font-semibold text-primary">Válido (Módulo 10)</span>
                         </div>
                       </div>
                     </div>
@@ -601,15 +601,15 @@ export default function App() {
 
                   <div className="grid grid-cols-3 gap-4">
                     <div className="bg-primary/5 p-4 rounded-xl border border-primary/10">
-                      <p className="text-[10px] font-bold text-primary uppercase tracking-wider mb-1">Available</p>
+                      <p className="text-[10px] font-bold text-primary uppercase tracking-wider mb-1">Disponibles</p>
                       <p className="text-2xl font-extrabold text-primary">{availableCount.toLocaleString()}</p>
                     </div>
                     <div className="bg-secondary/5 p-4 rounded-xl border border-secondary/10">
-                      <p className="text-[10px] font-bold text-secondary uppercase tracking-wider mb-1">Used</p>
+                      <p className="text-[10px] font-bold text-secondary uppercase tracking-wider mb-1">Usados</p>
                       <p className="text-2xl font-extrabold text-secondary">{usedCount.toLocaleString()}</p>
                     </div>
                     <div className="bg-error/5 p-4 rounded-xl border border-error/10">
-                      <p className="text-[10px] font-bold text-error uppercase tracking-wider mb-1">Blacklist</p>
+                      <p className="text-[10px] font-bold text-error uppercase tracking-wider mb-1">Lista Negra</p>
                       <p className="text-2xl font-extrabold text-error">{blacklistedCount.toLocaleString()}</p>
                     </div>
                   </div>
@@ -624,14 +624,14 @@ export default function App() {
                 className="bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant/20 overflow-hidden"
               >
                 <div className="p-6 border-b border-outline-variant/20 flex justify-between items-center bg-surface-container-low/30">
-                  <h2 className="text-xl font-bold font-headline">Generated EANs</h2>
+                  <h2 className="text-xl font-bold font-headline">EANs Generados</h2>
                   <div className="flex gap-4 items-center">
                     <select 
                       className="bg-surface-container-lowest border border-outline-variant/30 rounded-lg p-2 outline-none text-sm font-medium"
                       value={selectedBrandId || ''}
                       onChange={(e) => setSelectedBrandId(Number(e.target.value))}
                     >
-                      <option value="">All Brands</option>
+                      <option value="">Todas las Marcas</option>
                       {brands.map(b => (
                         <option key={b.id} value={b.id}>{b.name}</option>
                       ))}
@@ -644,17 +644,17 @@ export default function App() {
                     <thead className="bg-surface-container-low/50 text-on-surface-variant font-semibold">
                       <tr>
                         <th className="p-4">EAN-13</th>
-                        <th className="p-4">Brand</th>
-                        <th className="p-4">Status</th>
-                        <th className="p-4">Added By</th>
-                        <th className="p-4 text-right">Actions</th>
+                        <th className="p-4">Marca</th>
+                        <th className="p-4">Estado</th>
+                        <th className="p-4">Agregado Por</th>
+                        <th className="p-4 text-right">Acciones</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-outline-variant/10">
                       {currentBrandEans.length === 0 ? (
                         <tr>
                           <td colSpan={5} className="p-8 text-center text-on-surface-variant">
-                            No EANs found for this selection.
+                            No se encontraron EANs para esta selección.
                           </td>
                         </tr>
                       ) : (
@@ -663,7 +663,7 @@ export default function App() {
                           return (
                             <tr key={ean.ean} className="hover:bg-surface-container-lowest/50 transition-colors">
                               <td className="p-4 font-mono font-medium">{ean.ean}</td>
-                              <td className="p-4">{brand?.name || 'Unknown'}</td>
+                              <td className="p-4">{brand?.name || 'Desconocido'}</td>
                               <td className="p-4">
                                 <span className={cn(
                                   "px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider",
@@ -671,17 +671,17 @@ export default function App() {
                                   ean.status === 'used' ? "bg-secondary/10 text-secondary" :
                                   "bg-error/10 text-error"
                                 )}>
-                                  {ean.status}
+                                  {ean.status === 'generated' ? "Generado" : ean.status === 'used' ? "Usado" : "Lista Negra"}
                                 </span>
                               </td>
-                              <td className="p-4 text-on-surface-variant">{ean.updatedBy || 'Unknown'}</td>
+                              <td className="p-4 text-on-surface-variant">{ean.updatedBy || 'Desconocido'}</td>
                               <td className="p-4 text-right flex justify-end gap-4">
                                 {ean.status !== 'used' && ean.status !== 'blacklisted' && (
                                   <button 
                                     onClick={() => changeEanStatus(ean.ean, 'used')}
                                     className="text-xs font-bold text-primary hover:underline cursor-pointer"
                                   >
-                                    Mark Used
+                                    Marcar Usado
                                   </button>
                                 )}
                                 {ean.status !== 'blacklisted' && (
@@ -689,7 +689,7 @@ export default function App() {
                                     onClick={() => changeEanStatus(ean.ean, 'blacklisted')}
                                     className="text-xs font-bold text-error hover:underline cursor-pointer"
                                   >
-                                    Blacklist
+                                    A Lista Negra
                                   </button>
                                 )}
                               </td>
@@ -713,16 +713,16 @@ export default function App() {
                   <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-primary mx-auto mb-6">
                     <ShieldCheck className="w-8 h-8" />
                   </div>
-                  <h2 className="text-2xl font-bold font-headline mb-4">Mathematical EAN Validator</h2>
+                  <h2 className="text-2xl font-bold font-headline mb-4">Validador Matemático de EAN</h2>
                   <p className="text-on-surface-variant mb-8">
-                    Enter any 13-digit EAN code. The system will mathematically verify its checksum and check if it exists in your local registry or blacklist.
+                    Ingresa cualquier código EAN de 13 dígitos. El sistema verificará matemáticamente su dígito verificador y revisará si existe en tu registro o lista negra.
                   </p>
                   
                   <input 
                     type="text" 
                     value={validateEan}
                     onChange={e => setValidateEan(e.target.value.replace(/\D/g, '').slice(0, 13))}
-                    placeholder="Enter 13 digits..."
+                    placeholder="Ingresa 13 dígitos..."
                     className="w-full max-w-md mx-auto bg-surface-container-low border-none rounded-xl p-5 text-center font-mono text-2xl tracking-widest outline-none focus:ring-2 focus:ring-primary/20 mb-8"
                   />
 
@@ -744,11 +744,11 @@ export default function App() {
                           {validationResult.valid && (
                             <div className="space-y-2 mt-4 text-sm">
                               <div className="flex justify-between">
-                                <span className="text-on-surface-variant">Registry Status:</span>
+                                <span className="text-on-surface-variant">Estado en Registro:</span>
                                 <span className="font-bold uppercase">{validationResult.status}</span>
                               </div>
                               <div className="flex justify-between">
-                                <span className="text-on-surface-variant">Brand Match:</span>
+                                <span className="text-on-surface-variant">Marca Coincidente:</span>
                                 <span className="font-bold">{validationResult.brand}</span>
                               </div>
                             </div>
@@ -773,14 +773,14 @@ export default function App() {
                       <div className="w-10 h-10 rounded-lg bg-error/10 flex items-center justify-center text-error">
                         <Ban className="w-5 h-5" />
                       </div>
-                      <h2 className="text-xl font-bold font-headline">Manual Blacklist Load</h2>
+                      <h2 className="text-xl font-bold font-headline">Carga Manual a Lista Negra</h2>
                     </div>
                     <p className="text-sm text-on-surface-variant mb-4">
-                      Paste EANs (one per line) to prevent them from being generated. They will be mathematically validated before insertion.
+                      Pega los EANs (uno por línea) para evitar que sean generados. Serán validados matemáticamente antes de la inserción.
                     </p>
                     <textarea 
                       className="w-full h-48 bg-surface-container-low border-none rounded-lg p-4 focus:ring-2 focus:ring-error/20 transition-all text-on-surface font-mono text-sm outline-none resize-none mb-4"
-                      placeholder="Paste EANs here..."
+                      placeholder="Pega los EANs aquí..."
                       value={blacklistInput}
                       onChange={e => setBlacklistInput(e.target.value)}
                     />
@@ -788,7 +788,7 @@ export default function App() {
                       onClick={handleAddToBlacklist}
                       className="w-full py-3 px-6 bg-error text-white font-bold rounded-lg hover:bg-error/90 transition-colors cursor-pointer"
                     >
-                      Add to Blacklist
+                      Agregar a Lista Negra
                     </button>
                   </div>
                 </div>
@@ -796,23 +796,23 @@ export default function App() {
                 <div className="lg:col-span-7">
                   <div className="bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant/20 overflow-hidden h-full flex flex-col">
                     <div className="p-6 border-b border-outline-variant/20 bg-surface-container-low/30">
-                      <h2 className="text-xl font-bold font-headline">Blacklisted EANs</h2>
+                      <h2 className="text-xl font-bold font-headline">EANs en Lista Negra</h2>
                     </div>
                     <div className="overflow-y-auto flex-1 p-0">
                       <table className="w-full text-left text-sm">
                         <thead className="bg-surface-container-low/50 text-on-surface-variant font-semibold sticky top-0">
                           <tr>
                             <th className="p-4">EAN-13</th>
-                            <th className="p-4">Brand</th>
-                            <th className="p-4">Added By</th>
-                            <th className="p-4 text-right">Action</th>
+                            <th className="p-4">Marca</th>
+                            <th className="p-4">Agregado Por</th>
+                            <th className="p-4 text-right">Acción</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-outline-variant/10">
                           {eans.filter(e => e.status === 'blacklisted').length === 0 ? (
                             <tr>
                               <td colSpan={4} className="p-8 text-center text-on-surface-variant">
-                                No EANs in the blacklist.
+                                No hay EANs en la lista negra.
                               </td>
                             </tr>
                           ) : (
@@ -821,14 +821,14 @@ export default function App() {
                               return (
                                 <tr key={ean.ean} className="hover:bg-surface-container-lowest/50 transition-colors">
                                   <td className="p-4 font-mono font-medium">{ean.ean}</td>
-                                  <td className="p-4">{brand?.name || 'Unknown'}</td>
-                                  <td className="p-4 text-on-surface-variant">{ean.updatedBy || 'Unknown'}</td>
+                                  <td className="p-4">{brand?.name || 'Desconocido'}</td>
+                                  <td className="p-4 text-on-surface-variant">{ean.updatedBy || 'Desconocido'}</td>
                                   <td className="p-4 text-right">
                                     <button 
                                       onClick={() => changeEanStatus(ean.ean, 'generated')}
                                       className="text-xs font-bold text-on-surface-variant hover:text-primary hover:underline cursor-pointer"
                                     >
-                                      Remove (Set Generated)
+                                      Remover (Marcar Generado)
                                     </button>
                                   </td>
                                 </tr>
