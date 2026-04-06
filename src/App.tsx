@@ -7,7 +7,7 @@ import {
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { db } from './firebase';
-import { collection, doc, setDoc, onSnapshot, writeBatch, getDocFromServer } from 'firebase/firestore';
+import { collection, doc, setDoc, deleteDoc, onSnapshot, writeBatch, getDocFromServer } from 'firebase/firestore';
 
 enum OperationType {
   CREATE = 'create',
@@ -49,7 +49,7 @@ function TopNavBar({ activeTab, setActiveTab, userName, onLogout }: { activeTab:
     { id: 'generator', label: 'Generador' },
     { id: 'registry', label: 'Registro' },
     { id: 'validator', label: 'Validador' },
-    { id: 'blacklist', label: 'Lista Negra' }
+    { id: 'used_eans', label: 'Ya Usados' }
   ];
 
   return (
@@ -123,7 +123,8 @@ export default function App() {
   const [generateCount, setGenerateCount] = useState(10);
   
   const [validateEan, setValidateEan] = useState('');
-  const [blacklistInput, setBlacklistInput] = useState('');
+  const [bulkUsedInput, setBulkUsedInput] = useState('');
+  const [modalMessage, setModalMessage] = useState<{title: string, body: string} | null>(null);
 
   useEffect(() => {
     const storedName = localStorage.getItem('ean_flow_username');
@@ -205,7 +206,7 @@ export default function App() {
   const handleCreateBrand = async () => {
     if (!newBrandName || !newBrandPrefix) return;
     if (brands.some(b => b.prefix === newBrandPrefix)) {
-      alert('El prefijo de la marca ya existe.');
+      setModalMessage({ title: 'Error', body: 'El prefijo de la marca ya existe.' });
       return;
     }
     
@@ -288,10 +289,21 @@ export default function App() {
     }
   };
 
-  const handleAddToBlacklist = async () => {
-    if (!blacklistInput) return;
-    const eanList = blacklistInput.split('\n').map(e => e.trim()).filter(e => e.length > 0);
-    if (eanList.length === 0) return alert('No se proporcionaron EANs');
+  const handleDeleteEan = async (eanStr: string) => {
+    try {
+      await deleteDoc(doc(db, 'eans', eanStr));
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, `eans/${eanStr}`, userName);
+    }
+  };
+
+  const handleMarkAsUsedBulk = async () => {
+    if (!bulkUsedInput) return;
+    const eanList = bulkUsedInput.split('\n').map(e => e.trim()).filter(e => e.length > 0);
+    if (eanList.length === 0) {
+      setModalMessage({ title: 'Aviso', body: 'No se proporcionaron EANs' });
+      return;
+    }
     
     let addedCount = 0;
     let updatedCount = 0;
@@ -314,10 +326,10 @@ export default function App() {
 
       const existingEan = eans.find(e => e.ean === eanStr);
       if (existingEan) {
-        if (existingEan.status !== 'blacklisted') {
+        if (existingEan.status !== 'used') {
           batch.set(doc(db, 'eans', eanStr), {
             ...existingEan,
-            status: 'blacklisted',
+            status: 'used',
             updatedBy: userName
           });
           updatedCount++;
@@ -331,7 +343,7 @@ export default function App() {
         batch.set(doc(db, 'eans', eanStr), {
           ean: eanStr,
           brand_id: brand ? brand.id : 0,
-          status: 'blacklisted',
+          status: 'used',
           updatedBy: userName
         });
         addedCount++;
@@ -342,15 +354,15 @@ export default function App() {
       if (addedCount > 0 || updatedCount > 0) {
         await batch.commit();
       }
-      setBlacklistInput('');
+      setBulkUsedInput('');
       
-      let alertMsg = `Lista negra actualizada.\nAgregados: ${addedCount}\nActualizados: ${updatedCount}`;
+      let alertMsg = `EANs marcados como usados.\nAgregados: ${addedCount}\nActualizados: ${updatedCount}`;
       if (invalidCount > 0) {
         alertMsg += `\nMatemáticamente Inválidos (Ignorados): ${invalidCount}`;
       }
-      alert(alertMsg);
+      setModalMessage({ title: 'Carga Exitosa', body: alertMsg });
     } catch (error) {
-      handleFirestoreError(error, OperationType.WRITE, 'eans (batch blacklist)', userName);
+      handleFirestoreError(error, OperationType.WRITE, 'eans (batch used)', userName);
     }
   };
 
@@ -358,7 +370,6 @@ export default function App() {
   const currentBrandEans = selectedBrandId ? eans.filter(e => e.brand_id === selectedBrandId) : eans;
   const availableCount = currentBrandEans.filter(e => e.status === 'generated').length;
   const usedCount = currentBrandEans.filter(e => e.status === 'used').length;
-  const blacklistedCount = currentBrandEans.filter(e => e.status === 'blacklisted').length;
 
   const validationResult = React.useMemo(() => {
     if (!validateEan) return null;
@@ -375,7 +386,7 @@ export default function App() {
       return { 
         valid: true, 
         msg: 'Matemáticamente Válido', 
-        status: existing.status === 'generated' ? 'generado' : existing.status === 'used' ? 'usado' : 'lista negra', 
+        status: existing.status === 'generated' ? 'generado' : 'ya usado', 
         brand: brand?.name || 'Desconocido' 
       };
     }
@@ -430,13 +441,13 @@ export default function App() {
                 {activeTab === 'generator' && 'Generador de EANs'}
                 {activeTab === 'registry' && 'Registro de EANs'}
                 {activeTab === 'validator' && 'Validador de EANs'}
-                {activeTab === 'blacklist' && 'Lista Negra'}
+                {activeTab === 'used_eans' && 'Ya Usados'}
               </h1>
               <p className="text-on-surface-variant text-lg">
                 {activeTab === 'generator' && 'Define la identidad de tu marca y genera identificadores de producto únicos a escala.'}
-                {activeTab === 'registry' && 'Gestiona tus EANs generados, usados y en lista negra.'}
+                {activeTab === 'registry' && 'Gestiona tus EANs generados y ya usados.'}
                 {activeTab === 'validator' && 'Verifica matemáticamente cualquier EAN-13 y revisa su estado en tu registro.'}
-                {activeTab === 'blacklist' && 'Evita que se generen EANs específicos agregándolos a la lista negra.'}
+                {activeTab === 'used_eans' && 'Carga manualmente EANs que ya han sido utilizados para evitar que se vuelvan a generar.'}
               </p>
             </motion.header>
 
@@ -599,18 +610,14 @@ export default function App() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-2 gap-4">
                     <div className="bg-primary/5 p-4 rounded-xl border border-primary/10">
                       <p className="text-[10px] font-bold text-primary uppercase tracking-wider mb-1">Disponibles</p>
                       <p className="text-2xl font-extrabold text-primary">{availableCount.toLocaleString()}</p>
                     </div>
                     <div className="bg-secondary/5 p-4 rounded-xl border border-secondary/10">
-                      <p className="text-[10px] font-bold text-secondary uppercase tracking-wider mb-1">Usados</p>
+                      <p className="text-[10px] font-bold text-secondary uppercase tracking-wider mb-1">Ya Usados</p>
                       <p className="text-2xl font-extrabold text-secondary">{usedCount.toLocaleString()}</p>
-                    </div>
-                    <div className="bg-error/5 p-4 rounded-xl border border-error/10">
-                      <p className="text-[10px] font-bold text-error uppercase tracking-wider mb-1">Lista Negra</p>
-                      <p className="text-2xl font-extrabold text-error">{blacklistedCount.toLocaleString()}</p>
                     </div>
                   </div>
                 </motion.aside>
@@ -667,31 +674,27 @@ export default function App() {
                               <td className="p-4">
                                 <span className={cn(
                                   "px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider",
-                                  ean.status === 'generated' ? "bg-primary/10 text-primary" :
-                                  ean.status === 'used' ? "bg-secondary/10 text-secondary" :
-                                  "bg-error/10 text-error"
+                                  ean.status === 'generated' ? "bg-primary/10 text-primary" : "bg-secondary/10 text-secondary"
                                 )}>
-                                  {ean.status === 'generated' ? "Generado" : ean.status === 'used' ? "Usado" : "Lista Negra"}
+                                  {ean.status === 'generated' ? "Generado" : "Ya Usado"}
                                 </span>
                               </td>
                               <td className="p-4 text-on-surface-variant">{ean.updatedBy || 'Desconocido'}</td>
                               <td className="p-4 text-right flex justify-end gap-4">
-                                {ean.status !== 'used' && ean.status !== 'blacklisted' && (
+                                {ean.status === 'generated' && (
                                   <button 
                                     onClick={() => changeEanStatus(ean.ean, 'used')}
                                     className="text-xs font-bold text-primary hover:underline cursor-pointer"
                                   >
-                                    Marcar Usado
+                                    Marcar Ya Usado
                                   </button>
                                 )}
-                                {ean.status !== 'blacklisted' && (
-                                  <button 
-                                    onClick={() => changeEanStatus(ean.ean, 'blacklisted')}
-                                    className="text-xs font-bold text-error hover:underline cursor-pointer"
-                                  >
-                                    A USADO
-                                  </button>
-                                )}
+                                <button 
+                                  onClick={() => handleDeleteEan(ean.ean)}
+                                  className="text-xs font-bold text-error hover:underline cursor-pointer"
+                                >
+                                  Eliminar
+                                </button>
                               </td>
                             </tr>
                           );
@@ -761,7 +764,7 @@ export default function App() {
               </motion.div>
             )}
 
-            {activeTab === 'blacklist' && (
+            {activeTab === 'used_eans' && (
               <motion.div 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -770,25 +773,25 @@ export default function App() {
                 <div className="lg:col-span-5 space-y-6">
                   <div className="bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant/20 p-8">
                     <div className="flex items-center gap-3 mb-6">
-                      <div className="w-10 h-10 rounded-lg bg-error/10 flex items-center justify-center text-error">
-                        <Ban className="w-5 h-5" />
+                      <div className="w-10 h-10 rounded-lg bg-secondary/10 flex items-center justify-center text-secondary">
+                        <CheckCircle2 className="w-5 h-5" />
                       </div>
-                      <h2 className="text-xl font-bold font-headline">Carga Manual a Lista Negra</h2>
+                      <h2 className="text-xl font-bold font-headline">Carga Manual a Ya Usados</h2>
                     </div>
                     <p className="text-sm text-on-surface-variant mb-4">
-                      Pega los EANs (uno por línea) para evitar que sean generados. Serán validados matemáticamente antes de la inserción.
+                      Pega los EANs (uno por línea) para marcarlos como "Ya Usados" y evitar que sean generados.
                     </p>
                     <textarea 
-                      className="w-full h-48 bg-surface-container-low border-none rounded-lg p-4 focus:ring-2 focus:ring-error/20 transition-all text-on-surface font-mono text-sm outline-none resize-none mb-4"
+                      className="w-full h-48 bg-surface-container-low border-none rounded-lg p-4 focus:ring-2 focus:ring-secondary/20 transition-all text-on-surface font-mono text-sm outline-none resize-none mb-4"
                       placeholder="Pega los EANs aquí..."
-                      value={blacklistInput}
-                      onChange={e => setBlacklistInput(e.target.value)}
+                      value={bulkUsedInput}
+                      onChange={e => setBulkUsedInput(e.target.value)}
                     />
                     <button 
-                      onClick={handleAddToBlacklist}
-                      className="w-full py-3 px-6 bg-error text-white font-bold rounded-lg hover:bg-error/90 transition-colors cursor-pointer"
+                      onClick={handleMarkAsUsedBulk}
+                      className="w-full py-3 px-6 bg-secondary text-white font-bold rounded-lg hover:bg-secondary/90 transition-colors cursor-pointer"
                     >
-                      Agregar a Lista Negra
+                      Marcar como Ya Usados
                     </button>
                   </div>
                 </div>
@@ -796,7 +799,7 @@ export default function App() {
                 <div className="lg:col-span-7">
                   <div className="bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant/20 overflow-hidden h-full flex flex-col">
                     <div className="p-6 border-b border-outline-variant/20 bg-surface-container-low/30">
-                      <h2 className="text-xl font-bold font-headline">EANs en Lista Negra</h2>
+                      <h2 className="text-xl font-bold font-headline">EANs Ya Usados</h2>
                     </div>
                     <div className="overflow-y-auto flex-1 p-0">
                       <table className="w-full text-left text-sm">
@@ -809,26 +812,32 @@ export default function App() {
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-outline-variant/10">
-                          {eans.filter(e => e.status === 'blacklisted').length === 0 ? (
+                          {eans.filter(e => e.status === 'used').length === 0 ? (
                             <tr>
                               <td colSpan={4} className="p-8 text-center text-on-surface-variant">
-                                No hay EANs en la lista negra.
+                                No hay EANs marcados como ya usados.
                               </td>
                             </tr>
                           ) : (
-                            eans.filter(e => e.status === 'blacklisted').map((ean) => {
+                            eans.filter(e => e.status === 'used').map((ean) => {
                               const brand = brands.find(b => b.id === ean.brand_id);
                               return (
                                 <tr key={ean.ean} className="hover:bg-surface-container-lowest/50 transition-colors">
                                   <td className="p-4 font-mono font-medium">{ean.ean}</td>
                                   <td className="p-4">{brand?.name || 'Desconocido'}</td>
                                   <td className="p-4 text-on-surface-variant">{ean.updatedBy || 'Desconocido'}</td>
-                                  <td className="p-4 text-right">
+                                  <td className="p-4 text-right flex justify-end gap-4">
                                     <button 
                                       onClick={() => changeEanStatus(ean.ean, 'generated')}
                                       className="text-xs font-bold text-on-surface-variant hover:text-primary hover:underline cursor-pointer"
                                     >
-                                      Remover (Marcar Generado)
+                                      Marcar Generado
+                                    </button>
+                                    <button 
+                                      onClick={() => handleDeleteEan(ean.ean)}
+                                      className="text-xs font-bold text-error hover:underline cursor-pointer"
+                                    >
+                                      Eliminar
                                     </button>
                                   </td>
                                 </tr>
@@ -845,6 +854,26 @@ export default function App() {
           </>
         )}
       </main>
+      
+      {modalMessage && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-surface-container-lowest p-8 rounded-2xl shadow-2xl max-w-sm w-full border border-outline-variant/20"
+          >
+            <h3 className="text-xl font-bold font-headline mb-2 text-on-surface">{modalMessage.title}</h3>
+            <p className="text-on-surface-variant mb-6 whitespace-pre-wrap">{modalMessage.body}</p>
+            <button 
+              onClick={() => setModalMessage(null)}
+              className="w-full py-3 bg-primary text-white font-bold rounded-xl hover:bg-primary/90 transition-colors cursor-pointer"
+            >
+              Entendido
+            </button>
+          </motion.div>
+        </div>
+      )}
+
       <Footer />
     </div>
   );
